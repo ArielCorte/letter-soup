@@ -85,7 +85,7 @@ export default function Home() {
 
 
     function handleMouseOver(i: Coords) {
-        if (selection.length > 0 && isValid(i)) {
+        if (selection.length > 0 && isValid(i) && selection[0]) {
             fillFromStartToHover(selection[0], i)
         }
     }
@@ -93,6 +93,7 @@ export default function Home() {
     useEffect(() => {
         document.addEventListener("mouseup", () => {
             setSelection([])
+            setValidSqr([])
         })
     }, [])
 
@@ -104,9 +105,6 @@ export default function Home() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
             <main className="h-screen flex items-center justify-center">
-                <button onClick={() => {
-                    setSelection([...selection, [1, 1]])
-                }}>Click me</button>
                 <Card>
                     <div className={`p-4 aspect-square grid gap-1`}
                         style={{ gridTemplateColumns: `repeat(${soupSize}, minmax(0, 1fr))` }}
@@ -123,7 +121,7 @@ export default function Home() {
                                             handleMouseOver(coords)
                                         }}
                                         className={
-                                            cn("aspect-square p-1 h-10 bg-red-500 flex justify-center items-center select-none", inSelection(coords) ? "selected bg-blue-500" : "sqr")
+                                            cn("aspect-square p-1 h-10 bg-red-500 flex justify-center items-center select-none", inSelection(coords) ? "selected bg-blue-500" : "sqr", (validSqr.length === 0 || isValid(coords)) && "cursor-pointer")
                                         }
                                     >
                                         {coords}
