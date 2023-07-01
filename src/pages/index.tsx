@@ -1,11 +1,21 @@
 import Head from "next/head";
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 
 type Coords = [number, number];
 
 export default function Home() {
+    const soupSize = 4
+    //create array with the soup size with array of coordinates
+    //like [[0,0], [0,1], [0,2], [1,0], [1,1], [1,2] ...]
+    const soup: Coords[] = []
+    for (let i = 0; i < soupSize; i++) {
+        for (let j = 0; j < soupSize; j++) {
+            soup.push([i, j])
+        }
+    }
+
     const [selection, setSelection] = useState<[number, number][]>([[0, 0]])
     const [validSqr, setValidSqr] = useState<[number, number][]>([])
 
@@ -18,8 +28,66 @@ export default function Home() {
     }
 
     function newValidSqr(i: Coords) {
-        console.log("selected sqr", i)
-        setValidSqr([[i[0], 0], [i[0], 1]])
+        const newValidSqr: Coords[] = soup.filter((c) => getDirection(c, i) !== "none")
+        setValidSqr([...newValidSqr])
+    }
+
+    function getDirection(i: Coords, j: Coords) {
+        if (i[0] === j[0]) {
+            return "horizontal"
+        }
+        if (i[1] === j[1]) {
+            return "vertical"
+        }
+        if (Math.abs((i[1] - j[1]) / (i[0] - j[0])) === 1) {
+            return "diagonal"
+        }
+        return "none"
+    }
+
+    function fillFromStartToHover(i: Coords, j: Coords) {
+        const direction = getDirection(i, j)
+        const newSelection: Coords[] = []
+        if (direction === "vertical") {
+            if (i[0] < j[0]) {
+                for (let k = i[0]; k <= j[0]; k++) {
+                    newSelection.push([k, i[1]])
+                }
+            }
+            if (i[0] > j[0]) {
+                for (let k = i[0]; k >= j[0]; k--) {
+                    newSelection.push([k, i[1]])
+                }
+            }
+            setSelection([i, ...newSelection])
+        }
+        if (direction === "horizontal") {
+            if (i[1] < j[1]) {
+                for (let k = i[1]; k <= j[1]; k++) {
+                    newSelection.push([i[0], k])
+                }
+            }
+            if (i[1] > j[1]) {
+                for (let k = i[1]; k >= j[1]; k--) {
+                    newSelection.push([i[0], k])
+                }
+            }
+            setSelection([i, ...newSelection])
+        }
+        if (direction === "diagonal") {
+            const diff: Coords = [j[0] - i[0], j[1] - i[1]]
+            for (let k = 0; k <= Math.abs(diff[0]); k++) {
+                newSelection.push([i[0] + k * Math.sign(diff[0]), i[1] + k * Math.sign(diff[1])])
+            }
+            setSelection([i, ...newSelection])
+        }
+    }
+
+
+    function handleMouseOver(i: Coords) {
+        if (selection.length > 0 && isValid(i)) {
+            fillFromStartToHover(selection[0], i)
+        }
     }
 
     useEffect(() => {
@@ -38,13 +106,13 @@ export default function Home() {
             <main className="h-screen flex items-center justify-center">
                 <button onClick={() => {
                     setSelection([...selection, [1, 1]])
-                    console.log(selection)
                 }}>Click me</button>
                 <Card>
-                    <div className="p-4 aspect-square grid grid-cols-2 grid-rows-2 gap-1">
+                    <div className={`p-4 aspect-square grid gap-1`}
+                        style={{ gridTemplateColumns: `repeat(${soupSize}, minmax(0, 1fr))` }}
+                    >
                         {
-                            ["a", "b", "c", "c"].map((letter, i) => {
-                                const coords: Coords = [i % 2, Math.floor(i / 2)]
+                            soup.map((coords, i) => {
                                 return (
                                     <div key={i}
                                         onMouseDown={() => {
@@ -52,22 +120,20 @@ export default function Home() {
                                             newValidSqr(coords)
                                         }}
                                         onMouseOver={() => {
-                                            if (selection.length > 0 && isValid(coords)) {
-                                                setSelection([...selection, coords])
-                                            }
+                                            handleMouseOver(coords)
                                         }}
                                         className={
                                             cn("aspect-square p-1 h-10 bg-red-500 flex justify-center items-center select-none", inSelection(coords) ? "selected bg-blue-500" : "sqr")
                                         }
                                     >
-                                        {letter}
+                                        {coords}
                                     </div>
                                 )
                             })
                         }
                     </div>
                 </Card>
-            </main>
+            </main >
         </>
     );
 }
